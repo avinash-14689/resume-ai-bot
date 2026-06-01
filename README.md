@@ -56,3 +56,4 @@ Then open: http://localhost:7860
 - **Frontend**: Vanilla HTML/CSS/JS + Chart.js
 - **Deployment**: HuggingFace Spaces (Docker)
 # resume-ai-bot
+# resume-ai-bot
