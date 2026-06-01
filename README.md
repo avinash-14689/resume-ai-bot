@@ -55,3 +55,4 @@ Then open: http://localhost:7860
 - **Embeddings**: BAAI/bge-small-en-v1.5 (HuggingFace)
 - **Frontend**: Vanilla HTML/CSS/JS + Chart.js
 - **Deployment**: HuggingFace Spaces (Docker)
+# resume-ai-bot
