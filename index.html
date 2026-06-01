@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ResumeAI — Your Smart Resume Assistant</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Syne:wght@600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #f0f4ff;
+    --sidebar-bg: #ffffff;
+    --chat-bg: #ffffff;
+    --accent: #5b6ef5;
+    --accent2: #8b5cf6;
+    --accent3: #06b6d4;
+    --accent-soft: #eef0ff;
+    --chip-bg: #dcfce7;
+    --chip-border: #86efac;
+    --chip-text: #166534;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --border: #e2e8f0;
+    --border-soft: #f1f5f9;
+    --bot-bubble: #f8faff;
+    --user-bubble: linear-gradient(135deg, #5b6ef5, #8b5cf6);
+    --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(91,110,245,0.08);
+    --success: #10b981;
+    --warning: #f59e0b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    color: var(--text-primary);
+  }
+
+  /* ── Header ── */
+  header {
+    background: linear-gradient(135deg, #5b6ef5 0%, #8b5cf6 50%, #06b6d4 100%);
+    padding: 0 32px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 24px rgba(91,110,245,0.3);
+  }
+
+  .header-left { display: flex; align-items: center; gap: 12px; }
+
+  .logo-badge {
+    width: 38px; height: 38px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.25);
+  }
+
+  .header-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.3px;
+  }
+
+  .header-pill {
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 99px;
+    padding: 3px 10px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.9);
+    font-weight: 500;
+    margin-left: 6px;
+  }
+
+  .header-right { display: flex; align-items: center; gap: 8px; }
+
+  .key-input {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 10px;
+    padding: 8px 14px;
+    color: #fff;
+    font-size: 13px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    width: 230px;
+    outline: none;
+    transition: background 0.2s;
+  }
+
+  .key-input::placeholder { color: rgba(255,255,255,0.55); }
+  .key-input:focus { background: rgba(255,255,255,0.22); border-color: rgba(255,255,255,0.5); }
+
+  .btn-set-key {
+    background: rgba(255,255,255,0.22);
+    border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 10px;
+    padding: 8px 18px;
+    color: #fff;
+    font-size: 13px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-set-key:hover { background: rgba(255,255,255,0.32); }
+
+  .key-status { font-size: 12px; color: rgba(255,255,255,0.8); white-space: nowrap; }
+  .key-status.set { color: #6ee7b7; }
+
+  /* ── Main layout ── */
+  .main {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 16px;
+    padding: 16px 20px;
+    max-width: 1300px;
+    margin: 0 auto;
+    height: calc(100vh - 64px);
+  }
+
+  /* ── Left panel ── */
+  .left-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    padding-right: 2px;
+    padding-bottom: 4px;
+  }
+
+  .left-panel::-webkit-scrollbar { width: 3px; }
+  .left-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+  .card {
+    background: var(--sidebar-bg);
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--border);
+  }
+
+  .card-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .card-title-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+  }
+
+  /* Upload */
+  .upload-zone {
+    border: 2px dashed #c7d2fe;
+    border-radius: 14px;
+    padding: 24px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: linear-gradient(135deg, #fafbff, #f5f7ff);
+    position: relative;
+  }
+
+  .upload-zone:hover { border-color: var(--accent); background: #f0f2ff; transform: translateY(-1px); }
+  .upload-zone.dragover { border-color: var(--accent); background: #ebebff; }
+  .upload-zone.uploaded { border-color: var(--success); background: linear-gradient(135deg, #f0fdf4, #ecfdf5); border-style: solid; }
+
+  .upload-icon { font-size: 32px; margin-bottom: 10px; }
+  .upload-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 3px; }
+  .upload-sub { font-size: 11.5px; color: var(--text-muted); }
+
+  #file-input { display: none; }
+
+  .upload-progress { display: none; margin-top: 12px; }
+
+  .progress-bar-outer {
+    background: #e2e8f0;
+    border-radius: 99px;
+    height: 5px;
+    overflow: hidden;
+  }
+
+  .progress-bar-inner {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 99px;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0% { width: 20%; }
+    50% { width: 80%; }
+    100% { width: 20%; }
+  }
+
+  .upload-success-label {
+    display: none;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--success);
+    font-weight: 600;
+  }
+
+  /* Chart */
+  .chart-wrapper {
+    position: relative;
+    width: 170px; height: 170px;
+    margin: 0 auto 16px;
+  }
+
+  .chart-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .chart-center .big { font-size: 18px; font-weight: 700; color: var(--text-primary); font-family: 'Syne', sans-serif; }
+  .chart-center .small { font-size: 10px; color: var(--text-muted); }
+
+  .chart-legend { display: flex; flex-direction: column; gap: 8px; }
+
+  .legend-item {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+  }
+
+  .legend-left { display: flex; align-items: center; gap: 8px; }
+
+  .legend-bar-wrap {
+    flex: 1;
+    height: 4px;
+    background: #f1f5f9;
+    border-radius: 99px;
+    margin: 0 10px;
+    overflow: hidden;
+  }
+
+  .legend-bar { height: 100%; border-radius: 99px; }
+
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .legend-label { color: var(--text-secondary); font-weight: 500; }
+  .legend-pct { font-weight: 700; color: var(--text-primary); font-size: 12px; }
+
+  .chart-empty {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    padding: 24px 0;
+  }
+
+  .chart-empty .ei { font-size: 36px; margin-bottom: 8px; opacity: 0.5; }
+
+  /* Rating */
+  .rating-row { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+
+  .rating-circle {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(91,110,245,0.3);
+  }
+
+  .rating-circle .rnum { font-size: 22px; font-weight: 700; color: #fff; line-height: 1; font-family: 'Syne', sans-serif; }
+  .rating-circle .rdiv { font-size: 10px; color: rgba(255,255,255,0.7); }
+
+  .rating-detail { flex: 1; }
+  .stars { display: flex; gap: 2px; margin-bottom: 5px; }
+  .star { font-size: 15px; }
+  .rating-reason { font-size: 11.5px; color: var(--text-muted); line-height: 1.5; }
+
+  /* Skills */
+  .skills-grid { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+
+  .skill-tag {
+    background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+    color: #3730a3;
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 11.5px;
+    font-weight: 600;
+    border: 1px solid #c7d2fe;
+  }
+
+  .skill-tag.missing {
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    color: #78350f;
+    border-color: #fde68a;
+  }
+
+  .skill-section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    margin-bottom: 6px;
+    margin-top: 10px;
+  }
+
+  /* Quick wins */
+  .quick-win {
+    display: flex; align-items: flex-start; gap: 8px;
+    font-size: 12px; color: var(--text-secondary);
+    line-height: 1.5; margin-bottom: 8px;
+    padding: 8px 10px;
+    background: var(--bg);
+    border-radius: 8px;
+    border-left: 3px solid var(--accent);
+  }
+
+  /* ── Chat panel ── */
+  .chat-panel {
+    background: var(--chat-bg);
+    border-radius: 16px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+
+  .chat-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border-soft);
+    background: linear-gradient(135deg, #fafbff, #f8f9ff);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  .chat-header-left { display: flex; align-items: center; gap: 10px; }
+
+  .chat-avatar {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    box-shadow: 0 3px 10px rgba(91,110,245,0.25);
+  }
+
+  .chat-bot-name { font-weight: 700; font-size: 15px; color: var(--text-primary); }
+  .chat-bot-status { font-size: 11px; color: var(--success); font-weight: 500; }
+
+  .status-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--success);
+    margin-right: 4px;
+    animation: pulse-dot 2s infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .btn-reset {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 500;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  .btn-reset:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Messages */
+  .messages {
+    flex: 1; overflow-y: auto;
+    padding: 20px; display: flex;
+    flex-direction: column; gap: 16px;
+    scroll-behavior: smooth;
+  }
+
+  .messages::-webkit-scrollbar { width: 3px; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+  .msg-row { display: flex; gap: 10px; animation: fadeup 0.22s ease-out; }
+  .msg-row.user { flex-direction: row-reverse; }
+
+  @keyframes fadeup {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg-av {
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0; margin-top: 2px;
+  }
+
+  .msg-av.bot { background: linear-gradient(135deg, var(--accent), var(--accent2)); box-shadow: 0 2px 8px rgba(91,110,245,0.25); }
+  .msg-av.user { background: #f1f5f9; }
+
+  .msg-bubble {
+    max-width: 74%;
+    padding: 12px 16px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--text-primary);
+    word-break: break-word;
+  }
+
+  .msg-bubble.bot {
+    background: var(--bot-bubble);
+    border: 1px solid var(--border);
+    border-top-left-radius: 4px;
+  }
+
+  .msg-bubble.user {
+    background: linear-gradient(135deg, #5b6ef5, #8b5cf6);
+    color: #fff;
+    border-top-right-radius: 4px;
+    box-shadow: 0 3px 12px rgba(91,110,245,0.3);
+  }
+
+  /* Typing */
+  .typing-indicator { display: none; align-items: center; gap: 10px; }
+  .typing-indicator.show { display: flex; }
+
+  .typing-dots {
+    display: flex; gap: 4px;
+    background: var(--bot-bubble);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 16px;
+  }
+
+  .typing-dots span {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+    opacity: 0.6;
+  }
+
+  .typing-dots span:nth-child(2) { animation-delay: 0.18s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.36s; }
+
+  @keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.6; }
+    40% { transform: translateY(-6px); opacity: 1; }
+  }
+
+  /* Suggestions */
+  .suggestions {
+    padding: 10px 18px 8px;
+    border-top: 1px solid var(--border-soft);
+    background: #fafbff;
+  }
+
+  .suggestions-label {
+    font-size: 10px; font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.8px;
+    margin-bottom: 8px;
+  }
+
+  .chips { display: flex; gap: 7px; flex-wrap: wrap; }
+
+  .chip {
+    background: var(--chip-bg);
+    border: 1px solid var(--chip-border);
+    color: var(--chip-text);
+    border-radius: 10px;
+    padding: 6px 13px;
+    font-size: 12px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.18s;
+  }
+
+  .chip:hover {
+    background: #bbf7d0;
+    border-color: #4ade80;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(34,197,94,0.2);
+  }
+
+  /* Input area */
+  .input-area {
+    padding: 12px 18px 14px;
+    border-top: 1px solid var(--border-soft);
+    background: #fff;
+    display: flex; gap: 10px; align-items: flex-end;
+  }
+
+  .input-wrap {
+    flex: 1;
+    background: #f8faff;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    display: flex; align-items: flex-end;
+    padding: 10px 14px; gap: 8px;
+    transition: all 0.2s;
+  }
+
+  .input-wrap:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(91,110,245,0.1);
+    background: #fff;
+  }
+
+  #chat-input {
+    flex: 1; border: none; background: transparent;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13.5px; color: var(--text-primary);
+    outline: none; resize: none;
+    max-height: 120px; line-height: 1.5;
+  }
+
+  #chat-input::placeholder { color: var(--text-muted); }
+
+  .btn-send {
+    width: 42px; height: 42px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; border-radius: 12px;
+    color: white; font-size: 17px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; flex-shrink: 0;
+    box-shadow: 0 3px 10px rgba(91,110,245,0.3);
+  }
+
+  .btn-send:hover { transform: scale(1.06); box-shadow: 0 4px 14px rgba(91,110,245,0.4); }
+  .btn-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 20px; right: 20px;
+    background: #1e293b; color: white;
+    padding: 11px 18px; border-radius: 10px;
+    font-size: 13px; font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 500;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    transform: translateY(80px); opacity: 0;
+    transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 999; max-width: 300px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: linear-gradient(135deg, #059669, #10b981); }
+  .toast.error { background: linear-gradient(135deg, #dc2626, #ef4444); }
+
+  @media (max-width: 768px) {
+    .main { grid-template-columns: 1fr; height: auto; }
+    .chat-panel { min-height: 520px; }
+    header { padding: 0 16px; }
+    .key-input { width: 160px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo-badge">📄</div>
+    <div>
+      <span class="header-title">ResumeAI</span>
+      <span class="header-pill">Beta</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <input class="key-input" id="api-key-input" type="password" placeholder="Enter Groq API Key..." />
+    <button class="btn-set-key" onclick="setApiKey()">Set Key</button>
+    <span class="key-status" id="key-status">⚠ Key not set</span>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- Left Panel -->
+  <div class="left-panel">
+
+    <div class="card">
+      <div class="card-title"><div class="card-title-dot"></div>Upload Resume</div>
+      <div class="upload-zone" id="upload-zone"
+           onclick="document.getElementById('file-input').click()"
+           ondragover="handleDragOver(event)"
+           ondragleave="handleDragLeave(event)"
+           ondrop="handleDrop(event)">
+        <div class="upload-icon" id="upload-icon">☁️</div>
+        <div class="upload-title" id="upload-title">Drop your PDF here</div>
+        <div class="upload-sub" id="upload-sub">or click to browse · PDF only</div>
+        <div class="upload-progress" id="upload-progress">
+          <div class="progress-bar-outer"><div class="progress-bar-inner"></div></div>
+        </div>
+        <div class="upload-success-label" id="upload-success-label">✅ Indexed successfully!</div>
+      </div>
+      <input type="file" id="file-input" accept=".pdf,application/pdf" onchange="handleFileSelect(event)" />
+    </div>
+
+    <div class="card">
+      <div class="card-title"><div class="card-title-dot"></div>Company Fit Analysis</div>
+      <div id="chart-container">
+        <div class="chart-empty">
+          <div class="ei">📊</div>
+          <div>Upload your resume to see<br/>company fit analysis</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="rating-card" style="display:none">
+      <div class="card-title"><div class="card-title-dot"></div>Resume Rating</div>
+      <div class="rating-row">
+        <div class="rating-circle">
+          <div class="rnum" id="rating-number">—</div>
+          <div class="rdiv">/ 5</div>
+        </div>
+        <div class="rating-detail">
+          <div class="stars" id="stars-row"></div>
+          <div class="rating-reason" id="rating-reason"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="skills-card" style="display:none">
+      <div class="card-title"><div class="card-title-dot"></div>Skills Snapshot</div>
+      <div class="skill-section-label">✅ Strong Skills</div>
+      <div class="skills-grid" id="top-skills"></div>
+      <div class="skill-section-label">🔧 Improve</div>
+      <div class="skills-grid" id="missing-skills"></div>
+    </div>
+
+    <div class="card" id="wins-card" style="display:none">
+      <div class="card-title"><div class="card-title-dot"></div>Quick Wins</div>
+      <div id="quick-wins-list"></div>
+    </div>
+
+  </div>
+
+  <!-- Chat Panel -->
+  <div class="chat-panel">
+    <div class="chat-header">
+      <div class="chat-header-left">
+        <div class="chat-avatar">🤖</div>
+        <div>
+          <div class="chat-bot-name">ResumeAI Assistant</div>
+          <div class="chat-bot-status"><span class="status-dot"></span>Online & Ready</div>
+        </div>
+      </div>
+      <button class="btn-reset" onclick="resetSession()">↺ Reset</button>
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="typing-indicator" id="typing-indicator">
+      <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#5b6ef5,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">🤖</div>
+      <div class="typing-dots"><span></span><span></span><span></span></div>
+    </div>
+
+    <div class="suggestions">
+      <div class="suggestions-label">Try asking</div>
+      <div class="chips">
+        <button class="chip" onclick="useChip(this)">Build me a resume for a product based company</button>
+        <button class="chip" onclick="useChip(this)">I am a beginner, suggest how to build a resume</button>
+        <button class="chip" onclick="useChip(this)">Rate my resume</button>
+        <button class="chip" onclick="useChip(this)">What companies can I get into?</button>
+        <button class="chip" onclick="useChip(this)">How do I improve my resume for AI companies?</button>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-wrap">
+        <textarea id="chat-input" rows="1"
+          placeholder="Ask anything about your resume..."
+          onkeydown="handleKeyDown(event)"
+          oninput="autoResize(this)"></textarea>
+      </div>
+      <button class="btn-send" id="send-btn" onclick="sendMessage()">➤</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let isLoading = false;
+let donutChart = null;
+
+const COLORS = ['#5b6ef5','#10b981','#f59e0b','#8b5cf6','#ef4444'];
+
+window.addEventListener('DOMContentLoaded', async () => {
+  // Auto-check if backend already has key (from HF Secrets)
+  try {
+    const res = await fetch('/check-key');
+    const data = await res.json();
+    if (data.has_key) {
+      document.getElementById('key-status').textContent = '✅ Key set';
+      document.getElementById('key-status').className = 'key-status set';
+    }
+  } catch(e) {}
+
+  addBotMessage(`👋 Hey there! I'm **ResumeAI** — your personal resume consultant.\n\nHere's what I can do for you:\n• 📄 **Analyze your resume** and tell you which companies you'd fit into\n• ⭐ **Rate your resume** out of 5 with detailed feedback\n• 🏢 **Guide you** on building resumes for specific company types\n• 💡 **Help beginners** with no/few projects create a great resume\n\n**To get started:** Upload your PDF resume on the left, or ask me anything below! 🚀`);
+});
+
+async function setApiKey() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key) { showToast('Please enter your Groq API key', 'error'); return; }
+  try {
+    const res = await fetch('/set-key', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_key: key })
+    });
+    if (res.ok) {
+      document.getElementById('key-status').textContent = '✅ Key set';
+      document.getElementById('key-status').className = 'key-status set';
+      document.getElementById('api-key-input').value = '';
+      showToast('API key set!', 'success');
+    }
+  } catch(e) { showToast('Failed to set key', 'error'); }
+}
+
+function handleDragOver(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('dragover'); }
+function handleDragLeave() { document.getElementById('upload-zone').classList.remove('dragover'); }
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type === 'application/pdf') uploadFile(file);
+  else showToast('Please drop a PDF file', 'error');
+}
+function handleFileSelect(e) { const file = e.target.files[0]; if (file) uploadFile(file); }
+
+async function uploadFile(file) {
+  const zone = document.getElementById('upload-zone');
+  document.getElementById('upload-icon').textContent = '⏳';
+  document.getElementById('upload-title').textContent = 'Analyzing...';
+  document.getElementById('upload-sub').style.display = 'none';
+  document.getElementById('upload-progress').style.display = 'block';
+  document.getElementById('upload-success-label').style.display = 'none';
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const res = await fetch('/upload', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok) { showToast(data.detail || 'Upload failed', 'error'); resetUploadZone(); return; }
+
+    zone.classList.add('uploaded');
+    document.getElementById('upload-icon').textContent = '✅';
+    document.getElementById('upload-title').textContent = file.name.length > 28 ? file.name.substring(0,28)+'...' : file.name;
+    document.getElementById('upload-progress').style.display = 'none';
+    document.getElementById('upload-success-label').style.display = 'block';
+
+    renderAnalysis(data.analysis);
+
+    const a = data.analysis;
+    addBotMessage(`🎉 Resume uploaded and analyzed!\n\n**${a.summary}**\n\n**Rating: ${a.rating}/5** — ${a.rating_reason}\n\nCheck the left panel for your full breakdown. Ask me anything! 💪`);
+    showToast('Resume analyzed!', 'success');
+  } catch(e) { showToast('Upload error: ' + e.message, 'error'); resetUploadZone(); }
+}
+
+function resetUploadZone() {
+  document.getElementById('upload-icon').textContent = '☁️';
+  document.getElementById('upload-title').textContent = 'Drop your PDF here';
+  document.getElementById('upload-sub').style.display = 'block';
+  document.getElementById('upload-progress').style.display = 'none';
+  document.getElementById('upload-zone').classList.remove('uploaded');
+}
+
+function renderAnalysis(a) {
+  renderChart(a.companies);
+  renderRating(a.rating, a.rating_reason);
+  renderSkills(a.top_skills, a.missing_skills);
+  renderQuickWins(a.quick_wins);
+}
+
+function renderChart(companies) {
+  const container = document.getElementById('chart-container');
+  const labels = Object.keys(companies);
+  const values = Object.values(companies);
+
+  container.innerHTML = `
+    <div class="chart-wrapper">
+      <canvas id="donut-chart"></canvas>
+      <div class="chart-center">
+        <div class="big">Fit</div>
+        <div class="small">Analysis</div>
+      </div>
+    </div>
+    <div class="chart-legend" id="chart-legend"></div>
+  `;
+
+  if (donutChart) donutChart.destroy();
+
+  donutChart = new Chart(document.getElementById('donut-chart').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: COLORS,
+        borderWidth: 2,
+        borderColor: '#ffffff',
+        hoverOffset: 5,
+      }]
+    },
+    options: {
+      cutout: '70%',
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${c.label}: ${c.parsed}%` } } },
+      animation: { duration: 700 }
+    }
+  });
+
+  const legend = document.getElementById('chart-legend');
+  labels.forEach((label, i) => {
+    legend.innerHTML += `
+      <div class="legend-item">
+        <div class="legend-left">
+          <div class="legend-dot" style="background:${COLORS[i]}"></div>
+          <span class="legend-label">${label}</span>
+        </div>
+        <div class="legend-bar-wrap"><div class="legend-bar" style="width:${values[i]}%;background:${COLORS[i]}"></div></div>
+        <span class="legend-pct">${values[i]}%</span>
+      </div>`;
+  });
+}
+
+function renderRating(rating, reason) {
+  document.getElementById('rating-card').style.display = 'block';
+  document.getElementById('rating-number').textContent = rating;
+  document.getElementById('rating-reason').textContent = reason;
+  const sr = document.getElementById('stars-row');
+  sr.innerHTML = '';
+  for (let i = 1; i <= 5; i++) {
+    const s = document.createElement('span');
+    s.className = 'star';
+    s.textContent = i <= Math.round(rating) ? '★' : '☆';
+    s.style.color = i <= Math.round(rating) ? '#f59e0b' : '#e2e8f0';
+    sr.appendChild(s);
+  }
+}
+
+function renderSkills(top, missing) {
+  document.getElementById('skills-card').style.display = 'block';
+  document.getElementById('top-skills').innerHTML = top.map(s => `<span class="skill-tag">${s}</span>`).join('');
+  document.getElementById('missing-skills').innerHTML = missing.map(s => `<span class="skill-tag missing">${s}</span>`).join('');
+}
+
+function renderQuickWins(wins) {
+  document.getElementById('wins-card').style.display = 'block';
+  document.getElementById('quick-wins-list').innerHTML = wins.map(w => `
+    <div class="quick-win"><span>→</span><span>${w}</span></div>`).join('');
+}
+
+function useChip(el) {
+  const input = document.getElementById('chat-input');
+  input.value = el.textContent;
+  autoResize(input);
+  input.focus();
+}
+
+function handleKeyDown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const message = input.value.trim();
+  if (!message || isLoading) return;
+
+  input.value = ''; input.style.height = 'auto';
+  isLoading = true;
+  addUserMessage(message);
+  showTyping(true);
+  document.getElementById('send-btn').disabled = true;
+
+  try {
+    const res = await fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message })
+    });
+    const data = await res.json();
+    showTyping(false);
+    addBotMessage(res.ok ? data.response : '⚠️ ' + (data.detail || 'Something went wrong.'));
+  } catch(e) {
+    showTyping(false);
+    addBotMessage('⚠️ Network error. Make sure the server is running.');
+  }
+
+  isLoading = false;
+  document.getElementById('send-btn').disabled = false;
+  document.getElementById('chat-input').focus();
+}
+
+function addBotMessage(text) {
+  const c = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row';
+  row.innerHTML = `<div class="msg-av bot">🤖</div><div class="msg-bubble bot">${fmt(text)}</div>`;
+  c.appendChild(row);
+  scrollBottom();
+}
+
+function addUserMessage(text) {
+  const c = document.getElementById('messages');
+  const row = document.createElement('div');
+  row.className = 'msg-row user';
+  row.innerHTML = `<div class="msg-av user">👤</div><div class="msg-bubble user">${esc(text)}</div>`;
+  c.appendChild(row);
+  scrollBottom();
+}
+
+function fmt(text) {
+  text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  text = text.replace(/^• (.+)$/gm, '<span style="display:block;margin-left:4px;margin-bottom:2px;">• $1</span>');
+  text = text.replace(/\n/g, '<br/>');
+  return text;
+}
+
+function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function showTyping(show) {
+  const t = document.getElementById('typing-indicator');
+  show ? t.classList.add('show') : t.classList.remove('show');
+  if (show) scrollBottom();
+}
+
+function scrollBottom() {
+  const m = document.getElementById('messages');
+  setTimeout(() => { m.scrollTop = m.scrollHeight; }, 50);
+}
+
+async function resetSession() {
+  try { await fetch('/reset', { method: 'POST' }); } catch(e) {}
+  document.getElementById('messages').innerHTML = '';
+  document.getElementById('chart-container').innerHTML = `<div class="chart-empty"><div class="ei">📊</div><div>Upload your resume to see<br/>company fit analysis</div></div>`;
+  ['rating-card','skills-card','wins-card'].forEach(id => document.getElementById(id).style.display = 'none');
+  if (donutChart) { donutChart.destroy(); donutChart = null; }
+  resetUploadZone();
+  document.getElementById('file-input').value = '';
+  addBotMessage(`👋 Session reset! Upload a new resume or ask me anything. Ready to help! 🚀`);
+  showToast('Session reset', 'success');
+}
+
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = (type === 'success' ? '✓ ' : type === 'error' ? '✕ ' : '') + msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => { t.className = 'toast'; }, 3200);
+}
+</script>
+</body>
+</html>
